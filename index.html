@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <!-- Include the CesiumJS JavaScript and CSS files -->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.125/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.125/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            transition: width 0.3s ease-in-out;
+        }
+
+        #debugInfo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 4px;
+            z-index: 999;
+        }
+
+        #infoPanel {
+            position: fixed;
+            top: 0;
+            right: -50%;
+            width: 50%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-sizing: border-box;
+            transition: right 0.3s ease-in-out;
+            overflow-y: auto;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #infoPanel.active {
+            right: 0;
+        }
+
+        #cesiumContainer.shrunk {
+            width: 50%;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <div id="infoPanel">
+        <button class="close-button" onclick="closeBuildingInfoPanel()">×</button>
+        <div id="buildingInfo"></div>
+    </div>
+    <!-- <div id="debugInfo">Camera Info Loading...</div> -->
+    <script>
+        // Your access token can be found at: https://ion.cesium.com/tokens.
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhYjc1N2EwMS04ZDRmLTRkNzctODM3YS1iNjI3YmQyYzAxOWMiLCJpZCI6MjY4NDg3LCJpYXQiOjE3MzY3MDQwODN9.u4-ZP17AgywR8c_xGzxsQrEQdxOt6zbLp_fMXoeiYpA';
+
+        // Initialize the viewer with base configuration
+        function initViewer() {
+            // First create a hidden credits container
+            const creditContainer = document.createElement('div');
+            creditContainer.style.display = 'none';
+            
+            
+            const viewer = new Cesium.Viewer('cesiumContainer', {
+                terrain: Cesium.Terrain.fromWorldTerrain({
+                    requestVertexNormals: true,
+                    requestWaterMask: true
+                }),
+                baseLayerPicker: false,
+                geocoder: false,
+                homeButton: false,
+                sceneModePicker: false,
+                navigationHelpButton: false,
+                animation: false,
+                timeline: false,
+                fullscreenButton: false,
+                requestRenderMode: true,
+                maximumRenderTimeChange: Infinity,
+                terrainExaggeration: 1.0,
+                navigationInstructionsInitiallyVisible: false,
+                infoBox: false,
+                creditContainer: creditContainer
+            });
+
+            viewer.scene.setTerrain(
+                new Cesium.Terrain(
+                    Cesium.CesiumTerrainProvider.fromIonAssetId(3568106),
+                ),
+            );
+            viewer.scene.globe.depthTestAgainstTerrain = true;
+
+
+            // Configure zoom controls
+            viewer.scene.screenSpaceCameraController.enableZoom = true;
+            viewer.scene.screenSpaceCameraController.zoomEventTypes = [
+                Cesium.CameraEventType.WHEEL,
+                Cesium.CameraEventType.PINCH
+            ];
+
+            // const imageryViewModels = [];
+
+            // // Add Bing Maps Aerial
+            // imageryViewModels.push(new Cesium.ProviderViewModel({
+            //     name: 'Bing Aerial',
+            //     iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/bingAerial.png'),
+            //     tooltip: 'Bing Maps aerial imagery',
+            //     creationFunction: function() {
+            //         return new Cesium.BingMapsImageryProvider({
+            //             url: 'https://dev.virtualearth.net',
+            //             key: 'YOUR_BING_MAPS_KEY', // You'll need a Bing Maps key
+            //             mapStyle: Cesium.BingMapsStyle.AERIAL
+            //         });
+            //     }
+            // }));
+
+            // // Add OpenStreetMap
+            // imageryViewModels.push(new Cesium.ProviderViewModel({
+            //     name: 'OpenStreetMap',
+            //     iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/openStreetMap.png'),
+            //     tooltip: 'OpenStreetMap',
+            //     creationFunction: function() {
+            //         return new Cesium.OpenStreetMapImageryProvider({
+            //             url: 'https://tile.openstreetmap.org/'
+            //         });
+            //     }
+            // }));
+
+            // // Add Sentinel-2 imagery
+            // imageryViewModels.push(new Cesium.ProviderViewModel({
+            //     name: 'Sentinel-2',
+            //     iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/sentinel-2.png'),
+            //     tooltip: 'Sentinel-2 imagery',
+            //     creationFunction: function() {
+            //         return new Cesium.IonImageryProvider({ assetId: 3954 });
+            //     }
+            // }));
+
+            // // Add terrain providers
+            // const terrainViewModels = [];
+
+            // // Cesium World Terrain
+            // terrainViewModels.push(new Cesium.ProviderViewModel({
+            //     name: 'Cesium World Terrain',
+            //     iconUrl: Cesium.buildModuleUrl('Widgets/Images/TerrainProviders/CesiumWorldTerrain.png'),
+            //     tooltip: 'High-resolution global terrain',
+            //     creationFunction: function() {
+            //         return Cesium.Terrain.fromWorldTerrain({
+            //             requestVertexNormals: true,
+            //             requestWaterMask: true
+            //         });
+            //     }
+            // }));
+
+            // // WGS84 Ellipsoid (no terrain)
+            // terrainViewModels.push(new Cesium.ProviderViewModel({
+            //     name: 'WGS84 Ellipsoid',
+            //     iconUrl: Cesium.buildModuleUrl('Widgets/Images/TerrainProviders/Ellipsoid.png'),
+            //     tooltip: 'WGS84 standard ellipsoid, no terrain',
+            //     creationFunction: function() {
+            //         return new Cesium.EllipsoidTerrainProvider();
+            //     }
+            // }));
+
+            // // Set the available imagery and terrain providers
+            // viewer.baseLayerPicker.viewModel.imageryProviderViewModels = imageryViewModels;
+            // viewer.baseLayerPicker.viewModel.terrainProviderViewModels = terrainViewModels;
+
+            return viewer;
+        }
+
+        // Configure scene appearance
+        function configureSceneAppearance(viewer) {
+            viewer.scene.globe.showGroundAtmosphere = false;
+            viewer.scene.backgroundColor = Cesium.Color.TRANSPARENT;
+            // simulated day lighting
+            // viewer.scene.globe.enableLighting = true;
+            viewer.scene.globe.enableLighting = false;
+            viewer.scene.globe.terrainExaggeration = 1.0;
+            viewer.scene.globe.oceanHeight = -1000000;
+        }
+
+        // Configure Mauke region and tile loading
+        function configureMaukeRegion(viewer) {
+            const maukeRegion = Cesium.Rectangle.fromDegrees(
+                -157.36, // West
+                -20.26,  // South
+                -157.29, // East
+                -20.20   // North
+            );
+
+            // Add visible outline of the region
+            viewer.entities.add({
+                rectangle: {
+                    coordinates: maukeRegion,
+                    fill: false,
+                    outline: true,
+                    outlineColor: Cesium.Color.YELLOW.withAlpha(1.0),
+                    outlineWidth: 3,
+                    height: 5000, // Lift it above the terrain
+                    material: Cesium.Color.TRANSPARENT
+                }
+            });
+
+            // Monitor tile loading
+            viewer.scene.globe.tileLoadProgressEvent.addEventListener((queuedTileCount) => {
+                if (queuedTileCount === 0) {
+                    console.log('All terrain tiles loaded');
+                }
+            });
+
+            // Pre-cache the region by temporarily moving the camera
+            const camera = viewer.camera;
+            const originalPosition = camera.position.clone();
+            const originalOrientation = {
+                heading: camera.heading,
+                pitch: camera.pitch,
+                roll: camera.roll
+            };
+
+            // Move camera to view entire region
+            viewer.camera.flyTo({
+                destination: maukeRegion,
+                orientation: {
+                    heading: 0.0,
+                    pitch: -Cesium.Math.PI_OVER_TWO,
+                    roll: 0.0
+                },
+                duration: 0,
+                complete: () => {
+                    // Force a render to trigger tile loading
+                    viewer.scene.requestRender();
+                }
+            });
+
+            return maukeRegion;
+        }
+
+        // Configure tile loading and rendering
+        function configureTileLoading(viewer) {
+            viewer.scene.globe.baseColor = Cesium.Color.WHITE;
+            viewer.scene.globe.preloadSiblingsMaximumPriority = 1;
+            viewer.scene.globe.tileCacheSize = 1000;
+
+            // Force several renders to ensure tiles load
+            let renders = 0;
+            function forceRender() {
+                if (renders < 10) {
+                    viewer.scene.requestRender();
+                    renders++;
+                    setTimeout(forceRender, 250);
+                }
+            }
+            forceRender();
+        }
+
+        // Camera positioning functions
+        function setInitialCameraPosition(viewer) {
+            return viewer.camera.flyTo({
+                // -20.15452, -157.34338
+                destination: Cesium.Cartesian3.fromDegrees(-157.34338, -20.15452, 6961),
+                orientation: {
+                    heading: Cesium.Math.toRadians(360.00),
+                    pitch: Cesium.Math.toRadians(-45.00),
+                }
+            });
+        }
+
+        // Add these functions at the script level
+        function openInfoPanel(info) {
+            const viewer = window.VIEWER; // We'll need to store the viewer globally
+            const camera = viewer.camera;
+            
+            // Get current camera parameters before resize
+            const currentCenter = viewer.camera.position;
+            const currentDistance = Cesium.Cartesian3.distance(
+                currentCenter,
+                viewer.entities.values[0]?.position?.getValue() || currentCenter
+            );
+
+            // Open the panel
+            document.getElementById('buildingInfo').innerHTML = info;
+            document.getElementById('infoPanel').classList.add('active');
+            document.getElementById('cesiumContainer').classList.add('shrunk');
+
+            // Wait for the transition to complete
+            setTimeout(() => {
+                // Force a camera update to maintain the same view
+                viewer.camera.moveBackward(0);
+                viewer.scene.requestRender();
+            }, 300); // Match this with your CSS transition time
+        }
+
+        // Open a URL inside the side panel using an iframe
+        function openInfoPanelUrl(url) {
+            const viewer = window.VIEWER;
+            const container = document.getElementById('buildingInfo');
+            container.style.padding = '0';
+            container.style.height = '100%';
+            container.innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:0;"></iframe>`;
+            document.getElementById('infoPanel').classList.add('active');
+            document.getElementById('cesiumContainer').classList.add('shrunk');
+            setTimeout(() => {
+                viewer.camera.moveBackward(0);
+                viewer.scene.requestRender();
+            }, 300);
+        }
+
+        // Open a local HTML file inside the side panel using <object> (alternative to iframe)
+        function openInfoPanelHtml(path) {
+            const viewer = window.VIEWER;
+            const container = document.getElementById('buildingInfo');
+            container.style.padding = '0';
+            container.style.height = '100%';
+            const safePath = encodeURI(path);
+            container.innerHTML = `<object data="${safePath}" type="text/html" style="width:100%; height:100%; border:0;"><div style="padding:16px;font-family:sans-serif;">Unable to load content. <a href="${safePath}" target="_blank" rel="noopener">Open in new tab</a>.</div></object>`;
+            document.getElementById('infoPanel').classList.add('active');
+            document.getElementById('cesiumContainer').classList.add('shrunk');
+            setTimeout(() => {
+                viewer.camera.moveBackward(0);
+                viewer.scene.requestRender();
+            }, 300);
+        }
+
+        // Regular close for non-building clicks
+        function closeInfoPanel() {
+            document.getElementById('infoPanel').classList.remove('active');
+            document.getElementById('cesiumContainer').classList.remove('shrunk');
+        }
+
+        // Special close for building info with zoom out animation
+        function closeBuildingInfoPanel() {
+            document.getElementById('infoPanel').classList.remove('active');
+            document.getElementById('cesiumContainer').classList.remove('shrunk');
+            
+            const viewer = window.VIEWER;
+            const centerPoint = window.lastBuildingPosition || 
+                               Cesium.Cartesian3.fromDegrees(-157.34338, -20.15452);
+            
+            // Start from the stored initial building height
+            const startHeight = window.initialBuildingHeight || 200;
+            const endHeight = startHeight * 10; // Zoom out more dramatically
+            let currentHeight = startHeight;
+            
+            // Create a smooth transition over 2 seconds
+            const duration = 2000;
+            const startTime = Date.now();
+            
+            function easeOutCubic(t) {
+                return 1 - Math.pow(1 - t, 3);
+            }
+            
+            function updateZoom() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                const easedProgress = easeOutCubic(progress);
+                currentHeight = startHeight + (endHeight - startHeight) * easedProgress;
+                
+                // Update the camera position and show the dot
+                startMaukeFlyAround(viewer, centerPoint, currentHeight, true);
+                
+                // Update lastZoomHeight only at the end of animation
+                if (progress >= 1) {
+                    lastZoomHeight = currentHeight;
+                } else {
+                    requestAnimationFrame(updateZoom);
+                }
+            }
+            
+            updateZoom();
+        }
+
+        // Modify the loadOsmBuildings function to store the height when clicking a building
+        async function loadOsmBuildings(viewer) {
+            const buildingTileset = await Cesium.createOsmBuildingsAsync();
+            viewer.scene.primitives.add(buildingTileset);
+
+            viewer.screenSpaceEventHandler.setInputAction(function(click) {
+                const pickedObject = viewer.scene.pick(click.position);
+
+                // Handle clicks on our persistent marker entity first (avoid pickPosition cost)
+                let pickedEntity;
+                if (Cesium.defined(pickedObject)) {
+                    pickedEntity = pickedObject.id || pickedObject;
+                }
+                if (pickedEntity && MARKER_CONFIGS_BY_ID[pickedEntity.id]) {
+                    const cfg = MARKER_CONFIGS_BY_ID[pickedEntity.id];
+                    const centerPoint = Cesium.Cartesian3.fromDegrees(cfg.lon, cfg.lat);
+                    window.lastBuildingPosition = centerPoint;
+                    window.initialBuildingHeight = cfg.startFlyAroundHeight || 250;
+                    viewer.camera.flyTo({
+                        destination: Cesium.Cartesian3.fromDegrees(cfg.lon, cfg.lat, cfg.flyToHeight || 300),
+                        orientation: {
+                            heading: viewer.camera.heading,
+                            pitch: Cesium.Math.toRadians(-30),
+                            roll: 0
+                        },
+                        duration: 1.1,
+                        easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+                        complete: function() {
+                            openInfoPanelHtml(resolveContentPath(cfg.path));
+                            startMaukeFlyAround(viewer, centerPoint, cfg.startFlyAroundHeight || 350, true);
+                        }
+                    });
+                    return;
+                }
+
+                // Only compute pickPosition if not clicking the marker
+                const pickedLocation = viewer.scene.pickPosition(click.position);
+
+                if (pickedObject instanceof Cesium.Cesium3DTileFeature && Cesium.defined(pickedLocation)) {
+                    // Building was clicked
+                    viewer.entities.removeAll();
+                    
+                    const cartographic = Cesium.Cartographic.fromCartesian(pickedLocation);
+                    const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+                    const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+                    
+                    // Store the building position and initial zoom height globally
+                    window.lastBuildingPosition = Cesium.Cartesian3.fromDegrees(longitude, latitude);
+                    window.initialBuildingHeight = 200; // Store the initial close-up height
+                    
+                    // Start the fly around without creating the red dot
+                    startMaukeFlyAround(viewer, window.lastBuildingPosition, window.initialBuildingHeight, false);
+
+                    // Create formatted HTML for the info panel
+                    const pickedFeature = pickedObject;
+                    const buildingInfo = `
+                        <h2>${pickedFeature.getProperty('name') || 'Unnamed Building'}</h2>
+                        <div style="margin: 20px 0;">
+                            <p><strong>Type:</strong> ${pickedFeature.getProperty('building') || 'Unknown Type'}</p>
+                            <p><strong>Height:</strong> ${pickedFeature.getProperty('height') || 'Unknown'}m</p>
+                            <p><strong>Location:</strong></p>
+                            <p>Latitude: ${latitude.toFixed(6)}°</p>
+                            <p>Longitude: ${longitude.toFixed(6)}°</p>
+                        </div>
+                    `;
+
+                    // Open the info panel with the building information
+                    openInfoPanel(buildingInfo);
+                } 
+                else if (Cesium.defined(pickedLocation)) {
+                    // No building was clicked - use default click behavior
+                    startMaukeFlyAround(viewer, pickedLocation, lastZoomHeight);
+                    
+                    // Log the coordinates of clicked point
+                    const cartographic = Cesium.Cartographic.fromCartesian(pickedLocation);
+                    const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+                    const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+                    console.log(`New center point: ${longitude}, ${latitude}`);
+                    
+                    // Close the info panel if it's open
+                    closeInfoPanel();
+                }
+            }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        }
+
+        // Debug info setup
+        /*function setupDebugInfo(viewer) {
+            function updateDebugInfo() {
+                const camera = viewer.camera;
+                const cartographic = Cesium.Cartographic.fromCartesian(camera.position);
+                const lat = Cesium.Math.toDegrees(cartographic.latitude);
+                const lon = Cesium.Math.toDegrees(cartographic.longitude);
+                const height = Math.round(cartographic.height);
+                const heading = Cesium.Math.toDegrees(camera.heading);
+                const pitch = Cesium.Math.toDegrees(camera.pitch);
+
+                // Get the current center point if it exists
+                const centerPoint = viewer.entities.values[0]?.position?.getValue();
+                let distanceToCenter = 'N/A';
+                if (centerPoint) {
+                    distanceToCenter = Math.round(Cesium.Cartesian3.distance(camera.position, centerPoint));
+                }
+
+                const debugInfo = document.getElementById('debugInfo');
+                debugInfo.innerHTML = `
+                    Latitude: ${lat.toFixed(6)}°<br>
+                    Longitude: ${lon.toFixed(6)}°<br>
+                    Height: ${height.toLocaleString()}m<br>
+                    Distance to Center: ${distanceToCenter.toLocaleString()}m<br>
+                    Heading: ${heading.toFixed(2)}°<br>
+                    Pitch: ${pitch.toFixed(2)}°
+                `;
+            }
+            viewer.scene.postRender.addEventListener(updateDebugInfo);
+        }*/
+
+        // Add this at the top with other function declarations
+        let lastZoomHeight = 6500; // Store last zoom height globally
+
+        // Students base directory (prefix for student content paths)
+        const STUDENTS_BASE_DIR = 'students';
+
+        // Marker configuration map
+        const MARKER_CONFIGS = [
+            {
+                id: 'maukeMarker',
+                name: 'Kopu Pooki',
+                lat: -20.150940,
+                lon: -157.360588,
+                path: 'nelson/KOPUPOOKI/index.html',
+                flyToHeight: 300,
+                startFlyAroundHeight: 350
+            },
+            {
+                id: 'toiangaShop',
+                name: 'Toianga Shop',
+                lat: -20.158530246952623,
+                lon: -157.34328006563467,
+                path: 'precious/TOIANGA-SHOP/',
+                flyToHeight: 300,
+                startFlyAroundHeight: 350
+            },
+            {
+                id: 'vaiOu',
+                name: 'Vai Ou',
+                lat: -20.146984,
+                lon: -157.329278,
+                path: 'ross/VAI OU/',
+                flyToHeight: 300,
+                startFlyAroundHeight: 350
+            },
+            {
+                id: 'iceCreamShop',
+                name: 'Ice Cream Shop',
+                lat: -20.145928,
+                lon: -157.357346,
+                path: 'tearikiau/ice cream shop',
+                flyToHeight: 300,
+                startFlyAroundHeight: 350
+            },
+
+        ];
+
+        const MARKER_CONFIGS_BY_ID = MARKER_CONFIGS.reduce(function(map, cfg) {
+            map[cfg.id] = cfg;
+            return map;
+        }, {});
+
+        function resolveContentPath(path) {
+            if (typeof path !== 'string') return path;
+            // Normalize leading slash
+            var normalized = path.replace(/^\/+/, '');
+            // Auto-resolve directories to index.html
+            if (normalized.endsWith('/')) {
+                normalized = normalized + 'index.html';
+            }
+            // Prefix students base dir if not already present
+            var basePrefix = STUDENTS_BASE_DIR.replace(/\/+$/, '') + '/';
+            if (!(normalized.startsWith(basePrefix))) {
+                normalized = basePrefix + normalized;
+            }
+            return normalized;
+        }
+
+        function addMarkersFromConfig() {
+            const ds = window.PERSISTENT_DS;
+            MARKER_CONFIGS.forEach(function(cfg) {
+                ds.entities.add({
+                    id: cfg.id,
+                    name: cfg.name,
+                    position: Cesium.Cartesian3.fromDegrees(cfg.lon, cfg.lat),
+                    point: {
+                        pixelSize: 20,
+                        color: Cesium.Color.BLUE,
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 3,
+                        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+                        disableDepthTestDistance: Number.POSITIVE_INFINITY
+                    },
+                    label: {
+                        text: cfg.name,
+                        font: '12pt sans-serif',
+                        fillColor: Cesium.Color.WHITE,
+                        outlineColor: Cesium.Color.TRANSPARENT,
+                        outlineWidth: 0,
+                        style: Cesium.LabelStyle.FILL,
+                        pixelOffset: new Cesium.Cartesian2(0, -28),
+                        heightReference: Cesium.HeightReference.NONE,
+                        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                        eyeOffset: new Cesium.Cartesian3(0, 0, -10),
+                        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                        showBackground: false,
+                        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 20000.0)
+                    }
+                });
+            });
+        }
+
+        function startMaukeFlyAround(viewer, centerPoint, initialHeight = 6500, showDot = true) {
+            // Remove any existing center point indicator
+            viewer.entities.removeAll();
+            
+            // Add a point to visualize the center only if showDot is true
+            if (showDot) {
+                viewer.entities.add({
+                    position: centerPoint,
+                    point: {
+                        pixelSize: 10,
+                        color: Cesium.Color.RED,
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 2
+                    }
+                });
+            }
+            
+            // Remove any existing handlers
+            if (viewer.clockTickRemovalCallback) {
+                viewer.clockTickRemovalCallback();
+            }
+            if (viewer.currentWheelHandler) {
+                viewer.currentWheelHandler.destroy();
+            }
+            
+            // Set up the camera tick
+            let heading = 0;
+            const rotation = -0.2;
+            let currentDistance = initialHeight;
+            let currentPitch = Cesium.Math.toRadians(-45); // Initial pitch
+            
+            // Add handlers for both wheel and pinch zoom
+            const wheelHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+            
+            // Handle mouse wheel
+            wheelHandler.setInputAction((movement) => {
+                const zoomAmount = movement > 0 ? 0.9 : 1.1;
+                currentDistance *= zoomAmount;
+                lastZoomHeight = currentDistance;
+            }, Cesium.ScreenSpaceEventType.WHEEL);
+            
+            // Handle trackpad pinch
+            wheelHandler.setInputAction((movement) => {
+                const cameraPosition = viewer.camera.position;
+                currentDistance = Cesium.Cartesian3.distance(centerPoint, cameraPosition);
+            }, Cesium.ScreenSpaceEventType.PINCH_START);
+            
+            wheelHandler.setInputAction((movement) => {
+                const zoomAmount = movement.distance.endPosition.y > movement.distance.startPosition.y ? 1.1 : 0.9;
+                currentDistance *= zoomAmount;
+                lastZoomHeight = currentDistance;
+            }, Cesium.ScreenSpaceEventType.PINCH_MOVE);
+
+            // Add pitch control with right mouse button
+            let isRightClicking = false;
+            let lastMouseY = 0;
+
+            wheelHandler.setInputAction(() => {
+                isRightClicking = true;
+                lastMouseY = viewer.scene.canvas.height / 2; // Center of screen
+            }, Cesium.ScreenSpaceEventType.RIGHT_DOWN);
+
+            wheelHandler.setInputAction(() => {
+                isRightClicking = false;
+            }, Cesium.ScreenSpaceEventType.RIGHT_UP);
+
+            wheelHandler.setInputAction((movement) => {
+                if (isRightClicking) {
+                    const deltaY = movement.endPosition.y - lastMouseY;
+                    lastMouseY = movement.endPosition.y;
+                    
+                    // Adjust pitch based on mouse movement
+                    currentPitch += Cesium.Math.toRadians(deltaY * 0.1);
+                    
+                    // Clamp pitch between -85 and 0 degrees
+                    currentPitch = Math.max(Cesium.Math.toRadians(-85), 
+                                         Math.min(0, currentPitch));
+                }
+            }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+            
+            viewer.clockTickRemovalCallback = viewer.clock.onTick.addEventListener(() => {
+                heading += rotation * (Math.PI / 600);
+                viewer.camera.lookAt(
+                    centerPoint,
+                    new Cesium.HeadingPitchRange(heading, currentPitch, currentDistance)
+                );
+            });
+            
+            viewer.currentWheelHandler = wheelHandler;
+        }
+
+        // Handle click events to set new center point
+        function setupClickHandler(viewer) {
+            viewer.screenSpaceEventHandler.setInputAction(function(click) {
+                const pickedLocation = viewer.scene.pickPosition(click.position);
+                if (Cesium.defined(pickedLocation)) {
+                    console.log('Using saved height:', lastZoomHeight);
+                    // Start new fly around using the last zoom height
+                    startMaukeFlyAround(viewer, pickedLocation, lastZoomHeight);
+                    
+                    // Log the coordinates of clicked point
+                    const cartographic = Cesium.Cartographic.fromCartesian(pickedLocation);
+                    const longitude = Cesium.Math.toDegrees(cartographic.longitude);
+                    const latitude = Cesium.Math.toDegrees(cartographic.latitude);
+                    console.log(`New center point: ${longitude}, ${latitude}`);
+                }
+            }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        }
+
+        // Main initialization
+        function initializeApp() {
+            const viewer = initViewer();
+            window.VIEWER = viewer; // Store viewer globally
+            
+            // Create a persistent data source for markers/icons that should not be cleared
+            const persistentDataSource = new Cesium.CustomDataSource('persistent');
+            viewer.dataSources.add(persistentDataSource);
+            window.PERSISTENT_DS = persistentDataSource;
+            addMarkersFromConfig();
+            
+            // Set the viewer clock to a specific time (noon UTC)
+            // viewer.clock.currentTime = Cesium.JulianDate.fromDate(
+            //     new Date(Date.UTC(2024, 0, 1, 12, 0, 0))
+            // );
+            // viewer.clock.shouldAnimate = false;
+            
+            configureSceneAppearance(viewer);
+            
+            // ====== Mauke Region and Tile Loading Feature ======
+            const maukeRegion = configureMaukeRegion(viewer);
+            
+            // Setup click handler for changing rotation center
+            setupClickHandler(viewer);
+            
+            // First, fly to a good viewing position of Mauke
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(-157.34338, -20.15452, 6500),
+                orientation: {
+                    heading: Cesium.Math.toRadians(0),
+                    pitch: Cesium.Math.toRadians(-45),
+                    roll: 0
+                },
+                complete: function() {
+                    configureTileLoading(viewer);
+                    setTimeout(() => {
+                        // Start initial fly around from Mauke center
+                        const initialCenter = Cesium.Cartesian3.fromDegrees(-157.34338, -20.15452);
+                        startMaukeFlyAround(viewer, initialCenter);
+                    }, 2000);
+                }
+            });
+            // ======================================================
+
+            loadOsmBuildings(viewer);
+            // setupDebugInfo(viewer); // Commented out
+        }
+
+        // Start the application
+        initializeApp();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,85 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap');
+
+/* 
+ font-family: "Dancing Script", cursive;
+ font-family: "Corinthia", cursive;
+ font-family: "Nosifer", sans-serif;
+*/
+
+
+
+ /* title */
+  h1 {
+    font-family: "Dancing Script", cursive;
+  }
+
+  h2{
+    font-family: "Corinthia", cursive;
+  
+  }
+
+  p {
+    font-family: "Nosifer", sans-serif;
+  }
+
+  /* flexbox */
+  #flexbox {
+    display: flex;
+  }
+
+
+  /*left side */
+  #left-side {
+    width: 50%;
+  }
+
+#pooki1 {
+    width: 100%;
+    border-radius: 20px 0px 0px 20px;
+}
+
+
+  /*  right side */
+  #right-side {
+    width: 50%;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .grid {
+    width: 50%;
+
+    box-sizing: border-box
+  }
+
+  #grid1 {padding: 0px 5px 5px 10px}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+  #grid2 {
+    padding: 0px 10px 5px 5px;
+    border-radius: 0px 20px 0px 0px;
+  }
+
+  #grid3 {padding: 5px 5px 0px 10px}
+
+  #grid4 {
+    padding: 5px 10px 0px 5px;
+    border-radius: 0px 0px 20px 0px;
+  }
+
+  #stakeholder{
+    display: flex;
+    margin:25px 0px;
+    padding: 10px 0px;
+    border-top: 1px solid lightgray;
+    border-bottom: 1px solid lightgray;
+  }
+
+#person{
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+}
+
+
+  
