@@ -87,6 +87,9 @@
                     requestVertexNormals: true,
                     requestWaterMask: true
                 }),
+                imageryProvider: new Cesium.OpenStreetMapImageryProvider({
+                    url: 'https://tile.openstreetmap.org/'
+                }),
                 baseLayerPicker: false,
                 geocoder: false,
                 homeButton: false,
@@ -548,6 +551,24 @@
                 lat: -20.145928,
                 lon: -157.357346,
                 path: 'tearikiau/ice cream shop',
+                flyToHeight: 300,
+                startFlyAroundHeight: 350
+            },
+            {
+                id: 'shipwreck',
+                name: 'Shipwreck',
+                // lat: -20.145928,
+                // lon: -157.357346,
+                path: 'toa/shipwreck',
+                flyToHeight: 300,
+                startFlyAroundHeight: 350
+            },
+            {
+                id: 'opetipa',
+                name: 'Opetipa',
+                lat: -20.154165,
+                lon: -157.345920,
+                path: 'alone/Opetipa',
                 flyToHeight: 300,
                 startFlyAroundHeight: 350
             },

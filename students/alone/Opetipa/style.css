@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Ballet:opsz@16..72&family=Luxurious+Script&family=UnifrakturMaguntia&display=swap'); 
+/*
+font-family: "Ballet", cursive
+font-family: "Luxurious Script", cursive;
+font-family: "UnifrakturMaguntia", cursive;
+*/
+
+
+
+body {
+    background-color: aqua;
+}
+
+#header {
+    background-color: #5A0B4D;   /*fallback for old browsers */
+    background : -webkit-repeating-linear-gradient(to right, pink, purple, lightblue, black );
+}
+
+h1 {
+    font-family: "Ballet", cursive;
+    font-size: 100px;
+    color: #e44fcd;
+}
+
+
+/* title */
+h2 {
+    font-family: "Luxurious Script", cursive;
+    font-size: 100px; 
+    color: #8822bc;
+}
+
+p {
+    font-family: "UnifrakturMaguntia", cursive;
+    font-size: 100px;
+    color:#5A0B4D
+}
+
+
+
+/* felxbox */
+#flexbox {
+    display: flex;
+}
+/* left side */
+#left-side {
+    width:50%;
+}
+
+#opetipa1 {
+    width:100%;
+    border-radius: 50px 0px 0px 50px 
+}
+
+
+/* right side */
+#right-side {
+    width: 50%;
+    display: flex;
+    flex-wrap: wrap
+}
+
+.grid {
+    width: 50%;
+    padding: 10px;
+    box-sizing: borber-box;
+}
+
+#grid1 {
+    padding: 0px 5px 5px 10px;
+}
+#grid2 {
+    padding: 0px 10px 5px 10px;
+    border-radius: 0px 20px 0px 0px 
+}
+#grid3 {padding: 5px 5px 0px 10px}
+
+#grid4 {
+    padding: 5px 10px 0px 5px;
+    border-radius: 0px 0px 20px 0px 
+}
+
+#name {
+    font-family: "Honk", system-ui;
+    
+}
+
+#anime {
+    width: 150px;
+    height: 150px; 
+    border-radius: 50% ;
+    object-fit: cover;
+    padding-left: 20px;
+}
+
+#stakeholder {
+    display: flex;
+    margin: 25px 0px;
+    padding: 10px 0px;
+    border-top: blueviolet;
+    border-bottom: purple;
+}
+
+#person {
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+}
+
+
+
+
+
+
+
